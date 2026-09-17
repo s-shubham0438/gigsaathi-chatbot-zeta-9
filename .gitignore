@@ -1,0 +1,26 @@
+# Environment / secrets — keep .env.example, never commit the real .env
+.env
+
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python bytecode/cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Packaging artifacts
+*.egg-info/
+dist/
+build/
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db

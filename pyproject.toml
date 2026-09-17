@@ -1,0 +1,30 @@
+[project]
+name = "gigsaathi-ai-chatbot"
+version = "0.1.0"
+description = "Python AI orchestration service for the GigSaathi chatbot (FastAPI + Ollama/Llama 3.1)."
+requires-python = ">=3.14"
+readme = "README.md"
+
+# Dependency versions below are the exact versions verified to install and
+# import successfully during development (see docs/AI_IMPLEMENTATION_STATE.md
+# for the verification log, including the one sandbox limitation that applies
+# to Python 3.14 itself, not to these packages).
+dependencies = [
+    "fastapi==0.141.1",
+    "uvicorn[standard]==0.53.0",
+    "pydantic==2.13.5",
+    "pydantic-settings==2.15.0",
+    "httpx==0.28.1",
+    "pymongo==4.18.1",
+    "python-dotenv==1.2.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
