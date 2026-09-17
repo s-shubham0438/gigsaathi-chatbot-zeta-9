@@ -24,7 +24,7 @@ from app.schemas.chat import Intent
 # Ordered rule list: FIRST match wins. Order encodes priority — e.g. a
 # cancellation mention should win over a generic "booking" mention.
 _RULES: list[tuple[Intent, re.Pattern[str]]] = [
-    (Intent.GREETING, re.compile(r"^\s*(hi|hello|hey|namaste|namaskar|hii+|helo)\b", re.I)),
+    (Intent.GREETING, re.compile(r"^\s*(hi+|hello|hey|namaste|namaskar|helo)\s*[!.,]*\s*$", re.I)),
     (
         Intent.EMERGENCY_SERVICE,
         re.compile(

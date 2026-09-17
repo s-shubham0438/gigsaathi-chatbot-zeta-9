@@ -5,6 +5,12 @@ from app.services.intent import classify_intent
 def test_greeting():
     assert classify_intent("Hello") == Intent.GREETING
     assert classify_intent("Hi") == Intent.GREETING
+    assert classify_intent("Hii!") == Intent.GREETING
+
+
+def test_greeting_prefix_does_not_swallow_real_request():
+    assert classify_intent("Hi, my tap is leaking") == Intent.SERVICE_PROBLEM
+    assert classify_intent("Hello, I need help with a booking") == Intent.BOOK_SERVICE
 
 
 def test_service_problem_tap_leak():
