@@ -61,7 +61,12 @@ _RULES: list[tuple[Intent, re.Pattern[str]]] = [
     ),
     (
         Intent.BOOKING_STATUS,
-        re.compile(r"\b(booking status|where is my (worker|booking)|track (my )?(booking|order)|has (my )?worker)\b", re.I),
+        re.compile(
+            r"\b(booking status|where is my (worker|booking)|track (my )?(booking|order)|has (my )?worker|"
+            r"show (me )?my (?:(?:cancelled|canceled|past|recent|old)\s+)?(booking|bookings|service|services|order|orders)|"
+            r"my (bookings|orders)|booking history)\b",
+            re.I,
+        ),
     ),
     (
         Intent.PRICE_ESTIMATION,
@@ -90,7 +95,7 @@ _RULES: list[tuple[Intent, re.Pattern[str]]] = [
 # about something broken/needed, checked after the more specific rules above
 # so it acts as a fallback that still beats plain UNKNOWN.
 _PROBLEM_HINT_RE = re.compile(
-    r"\b(leak|leaking|broken|not working|tut gaya|toot gaya|kharab|fix|repair|repair karna|"
+    r"\b(leak|leaking|broken|not working|tut[\s-]?gaya|toot[\s-]?gaya|kharab|fix|repair|repair karna|"
     r"clean|cleaning|paint|painting|wiring|short circuit|shortcircuit|installation|install|"
     r"fried|board (fried|fuel|gaya)|not cooling|jam+ed?)\b",
     re.I,

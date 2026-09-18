@@ -5,6 +5,7 @@ class FakeNodeClient:
     def __init__(self):
         self.services = [
             {"_id": "svc1", "name": "Tap & Pipe Leak Repair", "category": "plumbing", "startingPrice": 299},
+            {"_id": "svc2", "name": "Switchboard & Wiring Repair", "category": "electrical", "startingPrice": 349},
         ]
         self.professionals = [
             {
@@ -18,7 +19,8 @@ class FakeNodeClient:
             }
         ]
         self.customer_bookings = [
-            {"_id": "b1", "status": "accepted", "service": {"name": "Tap & Pipe Leak Repair"}, "date": "2026-01-01"}
+            {"_id": "b1", "status": "accepted", "service": {"name": "Tap & Pipe Leak Repair"}, "date": "2026-01-01"},
+            {"_id": "b2", "status": "cancelled", "service": {"name": "Switchboard & Wiring Repair"}, "date": "2026-01-02"},
         ]
         self.cancel_calls: list[str] = []
 

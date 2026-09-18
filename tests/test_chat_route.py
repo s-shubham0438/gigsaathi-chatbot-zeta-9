@@ -62,6 +62,39 @@ def test_chat_service_problem_identifies_real_category_and_redirect():
     assert body["category"] == "plumbing"
     assert body["redirect"] == "/services?category=plumbing"
 
+def test_chat_followup_after_category_identification_still_answers():
+    client, _ = make_client()
+
+    first = client.post("/api/chat", json={"message": "My tap is leaking"})
+    assert first.json()["category"] == "plumbing"
+    conversation_id = first.json()["conversation_id"]
+
+    second = client.post(
+        "/api/chat", json={"message": "please show me", "conversation_id": conversation_id}
+    )
+    body = second.json()
+    assert body["category"] == "plumbing"
+    assert body["redirect"] == "/services?category=plumbing"
+    assert "plumbing" in body["message"]
+
+def test_chat_emergency_flow_surfaces_support_helpline_via_fallback():
+    client, _ = make_client()
+    response = client.post("/api/chat", json={"message": "my switchboard is sparking"})
+    body = response.json()
+    assert body["intent"] == "EMERGENCY_SERVICE"
+    assert body["priority"] == "emergency"
+    assert "1800-GIG-SAATHI" in body["message"], "fallback reply must surface the real support helpline"
+
+def test_chat_emergency_flow_also_recommends_the_matching_category():
+    client, _ = make_client()
+    response = client.post("/api/chat", json={"message": "my switchboard is sparking"})
+    body = response.json()
+    assert body["intent"] == "EMERGENCY_SERVICE"
+    assert body["category"] == "electrical"
+    assert body["redirect"] == "/services?category=electrical"
+    assert "electrical" in body["message"]
+
+
 
 def test_chat_cancel_requires_confirmation_before_mutating():
     client, fake_node = make_client()
@@ -91,3 +124,11 @@ def test_chat_dispute_report_creates_ticket_and_it_is_only_visible_to_owner():
     list_response = client.get("/api/support/tickets")
     assert list_response.status_code == 200
     assert list_response.json() == []
+
+def test_chat_show_cancelled_service_lists_recent_bookings():
+    client, _ = make_client()
+    response = client.post("/api/chat", json={"message": "show my cancelled service"})
+    body = response.json()
+    assert body["intent"] == "BOOKING_STATUS"
+    assert "cancelled" in body["message"].lower()
+    assert "Switchboard" in body["message"]

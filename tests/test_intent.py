@@ -54,3 +54,10 @@ def test_emergency_beats_service_problem():
     # "sparking" is both an electrical problem hint and an emergency marker —
     # emergency must win given the ordered rule list.
     assert classify_intent("My switchboard is sparking, please help urgently") == Intent.EMERGENCY_SERVICE
+
+def test_service_problem_hinglish_compound_word_without_space():
+    assert classify_intent("nal tutgaya hai") == Intent.SERVICE_PROBLEM
+    assert classify_intent("nal tut gaya hai") == Intent.SERVICE_PROBLEM
+
+def test_booking_status_show_cancelled_service_phrasing():
+    assert classify_intent("show my cancelled service") == Intent.BOOKING_STATUS

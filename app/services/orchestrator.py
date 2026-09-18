@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from app.clients.node_backend import NodeBackendClient, NodeBackendError
 from app.clients.ollama_client import OllamaClient, OllamaError
 from app.prompts.system_prompt import build_system_prompt
@@ -12,6 +13,10 @@ from app.config import settings
 from app.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+_AFFIRMATIVE_FOLLOWUP_RE = re.compile(
+    r"\b(show me|yes|yeah|yep|ok|okay|sure|please|haan|ha|theek hai|go ahead|do it)\b", re.I
+)
 
 
 class Orchestrator:
@@ -265,6 +270,34 @@ class Orchestrator:
             known_data["support_helpline"] = settings.support_phone_helpline
             known_data["safety_first"] = True
 
+            live_categories = await self._node.list_live_categories()
+            match = classify_category(message, live_categories)
+            state.category = match.category
+            state.problem = match.problem
+            if match.category:
+                known_data["matched_category"] = match.category
+                services = [s for s in await self._node.list_services() if s.get("category") == match.category]
+                known_data["matching_services"] = [
+                    {"name": s.get("name"), "startingPrice": s.get("startingPrice")} for s in services
+                ]
+                redirect = f"/services?category={match.category}"
+            else:
+                known_data["matched_category"] = None
+
+        elif (
+            intent in (Intent.UNKNOWN, Intent.GENERAL_HELP)
+            and state.category
+            and _AFFIRMATIVE_FOLLOWUP_RE.search(message)
+        ):
+            category = state.category
+            services = [s for s in await self._node.list_services() if s.get("category") == category]
+            known_data["matched_category"] = category
+            known_data["matching_services"] = [
+                {"name": s.get("name"), "startingPrice": s.get("startingPrice")} for s in services
+            ]
+            redirect = f"/services?category={category}"
+            known_data["followup_confirmation"]= True
+
         # GREETING / GENERAL_HELP / BOOK_SERVICE / ACCOUNT_RELATED / UNKNOWN
         # fall through with whatever known_data was already set above (or
         # none) — the LLM is told explicitly to say when it has nothing to
@@ -288,8 +321,49 @@ class Orchestrator:
 
 
 def _fallback_reply(*, language: str, known_data: dict[str, object]) -> str:
+    """
+    Used only when Ollama is unreachable (Section 38: graceful, honest
+    degradation — never a stack trace, never fabricated success). This is
+    deliberately plain and a little robotic; it is a safety net, not the
+    intended normal-path experience.
+    """
     if known_data.get("greeting"):
         return "Hi! Welcome to GigSaathi. How can I help you today?"
+    # Checked before matched_category/generic fallback: an EMERGENCY_SERVICE
+    # turn (see orchestrator._route) never sets matched_category — it skips
+    # category classification entirely — so without this case a real safety
+    # issue (sparking switchboard, gas leak, ...) fell through to the vague
+    # generic message below instead of surfacing the real support number.
+    # Found via live manual browser testing, not a unit test gap.
+    if known_data.get("safety_first"):
+        helpline = known_data.get("support_helpline") or known_data.get("support_phone") or "our support helpline"
+        base = (
+            "This sounds like it could be an emergency. If there's immediate danger, please "
+            f"prioritize your safety first. For urgent help, call {helpline} right away."
+        )
+        category = known_data.get("matched_category")
+        if category:
+            base += f" This also looks like a {category} issue — I can show you available {category} professionals."
+        return base
+    # Checked before the plain matched_category case below: a
+    # followup_confirmation turn (see orchestrator._route) reuses the SAME
+    # known_data["matched_category"] the original identification turn set,
+    # so without this branch both turns produce the identical "This looks
+    # like a plumbing issue..." sentence — which reads as if the follow-up
+    # ("please show me" / "yes") did nothing. Found via live manual browser
+    # testing, 2026-09-18.
+    if known_data.get("followup_confirmation") and known_data.get("matched_category"):
+        category = known_data["matched_category"]
+        return f"Sure — here are the {category} services and professionals near you."
+    if "recent_bookings" in known_data:
+        bookings = known_data["recent_bookings"]
+        if not bookings:
+            return "You don't have any bookings yet."
+        listed = "; ".join(
+            f"{b.get('service') or 'a service'} — {b.get('status')}" for b in bookings
+        )
+        return f"Here are your recent bookings: {listed}."
+
     if "ticket_created" in known_data:
         return (
             f"I've logged your report as ticket {known_data['ticket_created']['id']}. "
