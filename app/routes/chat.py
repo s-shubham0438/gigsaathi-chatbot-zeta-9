@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends
 
 from app.auth.session import AuthenticatedUser, get_current_user
 from app.clients.node_backend import NodeBackendClient
+from app.clients.ollama_client import OllamaClient
 from app.repositories.ticket_repository import TicketRepository
-from app.routes.deps import get_node_client, get_ticket_repository
+from app.routes.deps import get_node_client, get_ollama_client, get_ticket_repository
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.conversation import conversation_store
 from app.services.orchestrator import Orchestrator
@@ -19,6 +20,7 @@ async def chat(
     user: AuthenticatedUser = Depends(get_current_user),
     node_client: NodeBackendClient = Depends(get_node_client),
     ticket_repository: TicketRepository = Depends(get_ticket_repository),
+    ollama_client: OllamaClient = Depends(get_ollama_client),
 ) -> ChatResponse:
     state = conversation_store.get_or_create(body.conversation_id, user_id=user.id)
 
@@ -29,7 +31,7 @@ async def chat(
     if state.confirmation_state == "awaiting_confirmation" and _looks_like_confirmation(body.message):
         state.confirmation_state = "confirmed"
 
-    orchestrator = Orchestrator(node_client=node_client, ticket_repository=ticket_repository)
+    orchestrator = Orchestrator(node_client=node_client, ticket_repository=ticket_repository, ollama_client = ollama_client)
     try:
         return await orchestrator.handle(
             message=body.message, state=state, user_id=user.id, user_role=user.role

@@ -2,9 +2,10 @@ from fastapi.testclient import TestClient
 from app.auth.session import AuthenticatedUser, get_current_user
 from app.main import app
 from app.repositories.ticket_repository import TicketRepository
-from app.routes.deps import get_node_client, get_ticket_repository
+from app.routes.deps import get_node_client, get_ollama_client, get_ticket_repository
 from tests.fakes import FakeMongoClient
 from tests.fakes_node_client import FakeNodeClient
+from tests.fakes_ollama_client import FakeOllamaClient
 
 
 def _override_customer():
@@ -16,6 +17,7 @@ def make_client(user_override=_override_customer):
     app.dependency_overrides[get_current_user] = user_override
     app.dependency_overrides[get_node_client] = lambda: fake_node
     app.dependency_overrides[get_ticket_repository] = lambda: TicketRepository(client=FakeMongoClient())
+    app.dependency_overrides[get_ollama_client] = lambda: FakeOllamaClient()
     client = TestClient(app)
     return client, fake_node
 

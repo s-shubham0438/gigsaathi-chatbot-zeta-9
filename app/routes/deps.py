@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import Request
 
 from app.clients.node_backend import NodeBackendClient
+from app.clients.ollama_client import OllamaClient
 from app.repositories.ticket_repository import TicketRepository
 
 
@@ -13,3 +14,7 @@ def get_node_client(request: Request) -> NodeBackendClient:
 
 def get_ticket_repository() -> TicketRepository:
     return TicketRepository()
+
+
+def get_ollama_client() -> OllamaClient:
+    return OllamaClient()
